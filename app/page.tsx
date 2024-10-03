@@ -1,101 +1,105 @@
-import Image from "next/image";
+"use client"
+import { useState, useEffect } from 'react';
+import Head from 'next/head';
+import styles from '@/app/components/home.module.css';
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="https://nextjs.org/icons/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+  const [secretNumber, setSecretNumber] = useState(0);
+  const [guess, setGuess] = useState('');
+  const [message, setMessage] = useState('');
+  const [attempts, setAttempts] = useState(0);
+  const [highScore, setHighScore] = useState(0);
+  const [timeElapsed, setTimeElapsed] = useState(0);
+  const [gameStarted, setGameStarted] = useState(false);
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="https://nextjs.org/icons/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+  useEffect(() => {
+    generateSecretNumber();
+    const storedHighScore = localStorage.getItem('highScore');
+    if (storedHighScore) setHighScore(parseInt(storedHighScore));
+  }, []);
+
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (gameStarted) {
+      timer = setInterval(() => {
+        setTimeElapsed((prevTime) => prevTime + 1);
+      }, 1000);
+    }
+    return () => clearInterval(timer);
+  }, [gameStarted]);
+
+  const generateSecretNumber = () => {
+    setSecretNumber(Math.floor(Math.random() * 10) + 1);
+  };
+
+  const handleGuess = () => {
+    if (!gameStarted) setGameStarted(true);
+    
+    const userGuess = parseInt(guess);
+    setAttempts(attempts + 1);
+
+    if (isNaN(userGuess) || userGuess < 1 || userGuess > 10) {
+      setMessage('Please enter a valid number between 1 and 10!');
+    } else if (userGuess === secretNumber) {
+      setMessage(`Congratulations! You guessed it in ${attempts + 1} attempts!`);
+      if (attempts + 1 < highScore || highScore === 0) {
+        setHighScore(attempts + 1);
+        localStorage.setItem('highScore', (attempts + 1).toString());
+      }
+      setGameStarted(false);
+    } else if (userGuess < secretNumber) {
+      setMessage('Too low! Try again.');
+    } else {
+      setMessage('Too high! Try again.');
+    }
+    setGuess('');
+  };
+
+  const resetGame = () => {
+    generateSecretNumber();
+    setGuess('');
+    setMessage('');
+    setAttempts(0);
+    setTimeElapsed(0);
+    setGameStarted(false);
+  };
+
+  return (
+    <div className={styles.container}>
+      <Head>
+        <title>Number Guessing Game</title>
+        <link rel="icon" href="/favicon.ico" />
+      </Head>
+
+      <main className={styles.main}>
+        <h1 className={styles.title}>Number Guessing Game</h1>
+        <p className={styles.description}>Guess a number between 1 and 10</p>
+
+        <div className={styles.gameInfo}>
+          <p>Attempts: {attempts}</p>
+          <p>High Score: {highScore}</p>
+          <p>Time Elapsed: {timeElapsed}s</p>
         </div>
+
+        <div className={styles.inputSection}>
+          <input
+            type="text"
+            value={guess}
+            onChange={(e) => setGuess(e.target.value)}
+            placeholder="Enter your guess"
+            className={styles.input}
+          />
+          <button onClick={handleGuess} className={styles.button}>
+            Guess
+          </button>
+        </div>
+
+        <p className={styles.message}>{message}</p>
+
+        <button onClick={resetGame} className={styles.resetButton}>
+          Reset Game
+        </button>
       </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
     </div>
   );
 }
